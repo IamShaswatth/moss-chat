@@ -2,9 +2,9 @@
 
 A modern, AI-powered customer support chatbot platform built with RAG (Retrieval-Augmented Generation) and a sleek admin dashboard. This project includes a backend API, a React-based admin panel, and an embeddable chat widget.
 
-![Admin Dashboard Screenshot](client/public/dashboard-screenshot.png) **(Add a screenshot here if you like)*
 
-## 🚀 Features
+
+##  Features
 
 - **AI Chatbot**: Uses OpenRouter (Gemini, Claude, GPT) + Pinecone for RAG (Retrieval Augmented Generation).
 - **Admin Dashboard**: Manage knowledge base documents (PDF upload), view chat history, and monitor analytics.
@@ -14,7 +14,7 @@ A modern, AI-powered customer support chatbot platform built with RAG (Retrieval
 
 ---
 
-## 🛠️ Prerequisites
+##  Prerequisites
 
 Before you begin, ensure you have the following installed:
 
@@ -25,7 +25,7 @@ Before you begin, ensure you have the following installed:
 
 ---
 
-## ⚙️ Installation
+## Installation
 
 1.  **Clone the repository**:
     ```bash
@@ -47,7 +47,7 @@ Before you begin, ensure you have the following installed:
 
 ---
 
-## 🔑 Environment Configuration
+## Environment Configuration
 
 Create a `.env` file in the root directory (based on `.env.example` if available) and add the following keys:
 
@@ -76,7 +76,7 @@ EMBEDDING_DIMENSIONS=1024
 
 ---
 
-## 🏃‍♂️ Running the Project
+##  Running the Project
 
 You need to run both the specific backend server and the frontend client.
 
@@ -98,7 +98,7 @@ npm run dev
 
 ---
 
-## 🧪 Testing
+##  Testing
 
 ### Chat Widget
 You can test the chat widget independently without embedding it on a site.
@@ -113,7 +113,7 @@ You can test the chat widget independently without embedding it on a site.
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 - **/server**: Node.js/Express backend API
   - `/routes`: API endpoints (chat, auth, documents)
@@ -128,7 +128,7 @@ You can test the chat widget independently without embedding it on a site.
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 1.  Fork the repository
 2.  Create your feature branch (`git checkout -b feature/AmazingFeature`)
