@@ -5,6 +5,7 @@ import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Documents from './pages/Documents.jsx';
 import ChatHistory from './pages/ChatHistory.jsx';
+import Suggestions from './pages/Suggestions.jsx';
 import Layout from './components/Layout.jsx';
 
 function ProtectedRoute({ children }) {
@@ -26,6 +27,7 @@ function App() {
                         <Route index element={<Dashboard />} />
                         <Route path="documents" element={<Documents />} />
                         <Route path="chat-history" element={<ChatHistory />} />
+                        <Route path="suggestions" element={<Suggestions />} />
                     </Route>
                 </Routes>
             </BrowserRouter>

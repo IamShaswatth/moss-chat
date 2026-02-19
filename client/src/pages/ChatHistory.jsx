@@ -65,20 +65,23 @@ export default function ChatHistory() {
                     ) : (
                         <div className="session-list">
                             {sessions.map((session) => {
-                                const id = session.id || session._id;
+                                const displayId = session._id || session.id;
+                                const lookupId = session.sessionId || displayId;
                                 return (
                                     <div
-                                        key={id}
+                                        key={displayId}
                                         className="session-card"
-                                        onClick={() => viewSession(id)}
+                                        onClick={() => viewSession(lookupId)}
                                         style={{
-                                            borderColor: selectedSession && (selectedSession.id || selectedSession._id) === id
+                                            borderColor: selectedSession && (selectedSession.sessionId || selectedSession._id) === lookupId
                                                 ? 'var(--accent)' : undefined
                                         }}
                                     >
                                         <div className="session-card-header">
                                             <span className="session-card-id">
-                                                Visitor: {session.visitorId?.substring(0, 8) || 'anonymous'}...
+                                                {session.userName
+                                                    ? `${session.userName}`
+                                                    : `Visitor: ${session.visitorId?.substring(0, 8) || 'anonymous'}...`}
                                             </span>
                                             <span className="session-card-time">
                                                 {formatTime(session.createdAt)}

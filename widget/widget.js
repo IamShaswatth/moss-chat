@@ -1,20 +1,53 @@
 (function () {
   'use strict';
 
+  const WIDGET_STRINGS = {
+    en: { title: 'Chat Support', subtitle: 'Ask us anything', placeholder: 'Type your message...', send: 'Send', fallback: "I'm sorry, I couldn't find relevant information. Please contact support." },
+    hi: { title: 'चैट सहायता', subtitle: 'हमसे कुछ भी पूछें', placeholder: 'अपना संदेश लिखें...', send: 'भेजें', fallback: "क्षमा करें, मुझे प्रासंगिक जानकारी नहीं मिली। कृपया सहायता से संपर्क करें।" },
+    es: { title: 'Soporte por Chat', subtitle: 'Pregúntanos lo que sea', placeholder: 'Escribe tu mensaje...', send: 'Enviar', fallback: "Lo siento, no encontré información relevante. Contacte a soporte." },
+    fr: { title: 'Support Chat', subtitle: 'Posez-nous vos questions', placeholder: 'Tapez votre message...', send: 'Envoyer', fallback: "Désolé, aucune information pertinente trouvée. Contactez le support." },
+    de: { title: 'Chat-Support', subtitle: 'Fragen Sie uns', placeholder: 'Nachricht eingeben...', send: 'Senden', fallback: "Leider keine relevanten Informationen gefunden. Kontaktieren Sie den Support." },
+    ar: { title: 'دعم الدردشة', subtitle: 'اسألنا أي شيء', placeholder: 'اكتب رسالتك...', send: 'إرسال', fallback: "عذراً، لم أتمكن من إيجاد معلومات ذات صلة. تواصل مع الدعم." },
+    ja: { title: 'チャットサポート', subtitle: 'お気軽にどうぞ', placeholder: 'メッセージを入力...', send: '送信', fallback: "申し訳ありません。関連情報が見つかりませんでした。" },
+    ko: { title: '채팅 지원', subtitle: '무엇이든 물어보세요', placeholder: '메시지를 입력하세요...', send: '전송', fallback: "죄송합니다. 관련 정보를 찾을 수 없습니다." },
+    zh: { title: '在线客服', subtitle: '有问题随时问', placeholder: '输入您的消息...', send: '发送', fallback: "抱歉，未找到相关信息。请联系客服。" },
+    pt: { title: 'Suporte via Chat', subtitle: 'Pergunte-nos qualquer coisa', placeholder: 'Digite sua mensagem...', send: 'Enviar', fallback: "Desculpe, não encontrei informações relevantes. Contate o suporte." },
+    bn: { title: 'চ্যাট সহায়তা', subtitle: 'আমাদের যেকোনো কিছু জিজ্ঞাসা করুন', placeholder: 'আপনার বার্তা লিখুন...', send: 'পাঠান', fallback: "দুঃখিত, প্রাসঙ্গিক তথ্য পাওয়া যায়নি।" },
+    ta: { title: 'அரட்டை ஆதரவு', subtitle: 'எதையும் கேளுங்கள்', placeholder: 'உங்கள் செய்தியை தட்டச்சு செய்யவும்...', send: 'அனுப்பு', fallback: "மன்னிக்கவும், தொடர்புடைய தகவல் கிடைக்கவில்லை." },
+  };
+
+  function getWidgetLang(configLang) {
+    if (configLang && WIDGET_STRINGS[configLang]) return configLang;
+    // Auto-detect from browser
+    const browserLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+    return WIDGET_STRINGS[browserLang] ? browserLang : 'en';
+  }
+
   const DEFAULTS = {
     serverUrl: 'http://localhost:3000',
     tenantId: '',
     position: 'right',
     primaryColor: '#4ade80',
-    title: 'Chat Support',
-    subtitle: 'Ask us anything',
-    placeholder: 'Type your message...',
-    fallbackMessage: "I'm sorry, I couldn't find relevant information. Please contact support."
+    lang: '',
+    title: '',
+    subtitle: '',
+    placeholder: '',
+    fallbackMessage: '',
+    userName: '',
+    userEmail: ''
   };
 
   class MossChatWidget {
     constructor(config = {}) {
       this.config = { ...DEFAULTS, ...config };
+      // Resolve language and localized strings
+      this.lang = getWidgetLang(this.config.lang);
+      const strings = WIDGET_STRINGS[this.lang];
+      this.config.title = this.config.title || strings.title;
+      this.config.subtitle = this.config.subtitle || strings.subtitle;
+      this.config.placeholder = this.config.placeholder || strings.placeholder;
+      this.config.sendLabel = strings.send;
+      this.config.fallbackMessage = this.config.fallbackMessage || strings.fallback;
       this.sessionId = this.getSessionId();
       this.visitorId = this.getVisitorId();
       this.messages = [];
@@ -291,7 +324,7 @@
         </div>
         <div class="moss-widget-input">
           <input type="text" id="moss-input" placeholder="${this.config.placeholder}" />
-          <button id="moss-send">Send</button>
+          <button id="moss-send">${this.config.sendLabel}</button>
         </div>
       `;
 
@@ -381,7 +414,9 @@
             message: text,
             tenantId: this.config.tenantId,
             sessionId: this.sessionId,
-            visitorId: this.visitorId
+            visitorId: this.visitorId,
+            userName: this.config.userName || undefined,
+            userEmail: this.config.userEmail || undefined
           })
         });
 
@@ -467,7 +502,10 @@
   if (script && script.dataset.tenantId) {
     new MossChatWidget({
       tenantId: script.dataset.tenantId,
-      serverUrl: script.dataset.serverUrl || DEFAULTS.serverUrl
+      serverUrl: script.dataset.serverUrl || DEFAULTS.serverUrl,
+      lang: script.dataset.lang || '',
+      userName: script.dataset.userName || '',
+      userEmail: script.dataset.userEmail || ''
     });
   }
 })();

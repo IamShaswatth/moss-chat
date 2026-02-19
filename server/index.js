@@ -39,7 +39,8 @@ async function start() {
     await connectDatabase();
     app.listen(PORT, () => {
         console.log(`\n🌿 Moss Chat server running on http://localhost:${PORT}`);
-        console.log(`   Admin panel: http://localhost:5173\n`);
+        console.log(`   Admin panel: http://localhost:5173`);
+        console.log(`   Feature: Unanswered Questions Tracking Active\n`);
     });
 }
 

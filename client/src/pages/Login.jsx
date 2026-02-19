@@ -32,7 +32,7 @@ export default function Login() {
     return (
         <div className="login-page">
             <div className="login-card fade-in">
-                <h1>🌿 Moss Chat</h1>
+                <h1>Moss Chat</h1>
                 <p>{isRegister ? 'Create your account' : 'Sign in to your dashboard'}</p>
 
                 {error && <div className="error-msg">{error}</div>}

@@ -27,6 +27,8 @@ const chatSessionSchema = new mongoose.Schema({
     sessionId: { type: String, required: true, unique: true, index: true },
     visitorId: { type: String, required: true },
     tenantId: { type: String, required: true, index: true },
+    userName: { type: String, default: null },
+    userEmail: { type: String, default: null },
     metadata: { type: Object, default: {} },
     messages: [messageSchema]
 }, { timestamps: true });
@@ -35,3 +37,6 @@ export const User = mongoose.model('User', userSchema);
 export const Document = mongoose.model('Document', documentSchema);
 export const ChatSession = mongoose.model('ChatSession', chatSessionSchema);
 export const Message = mongoose.model('Message', messageSchema);
+import { UnansweredQuestion } from './UnansweredQuestion.js';
+import { FaqEntry } from './FaqEntry.js';
+export { UnansweredQuestion, FaqEntry };
