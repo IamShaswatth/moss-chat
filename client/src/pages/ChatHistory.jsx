@@ -53,7 +53,6 @@ export default function ChatHistory() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: selectedSession ? '1fr 1fr' : '1fr', gap: '24px' }}>
-                {/* Session List */}
                 <div>
                     {sessions.length === 0 ? (
                         <div className="empty-state">
@@ -96,14 +95,13 @@ export default function ChatHistory() {
                     )}
                 </div>
 
-                {/* Message Detail */}
                 {selectedSession && (
                     <div className="messages-panel">
                         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Conversation</h3>
                             <button
                                 className="btn btn-sm"
-                                style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
+                                style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
                                 onClick={() => setSelectedSession(null)}
                             >
                                 Close
@@ -117,19 +115,7 @@ export default function ChatHistory() {
                                 </div>
                                 <div className="message-meta">
                                     <span>{msg.role}</span>
-                                    {msg.confidence && (
-                                        <span>Confidence: {Math.round(msg.confidence * 100)}%</span>
-                                    )}
                                 </div>
-                                {msg.citations && msg.citations.length > 0 && (
-                                    <div style={{ marginTop: '4px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                        {msg.citations.map((c, j) => (
-                                            <span key={j} style={{ marginRight: '8px' }}>
-                                                [Source {c.index}] Score: {c.score}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
                             </div>
                         ))}
                     </div>

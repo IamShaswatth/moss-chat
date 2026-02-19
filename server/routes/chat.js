@@ -10,8 +10,17 @@ const router = Router();
 
 const SIMILARITY_THRESHOLD = 0.15;
 
-// SSE Chat endpoint (public - for widget)
+// AG-UI Protocol: SSE Chat endpoint (public - for widget)
 router.post('/', async (req, res) => {
+    const runId = uuidv4();
+    const messageId = uuidv4();
+    const now = () => new Date().toISOString();
+
+    // Helper to emit AG-UI events
+    const emit = (event) => {
+        res.write(`data: ${JSON.stringify({ ...event, timestamp: now() })}\n\n`);
+    };
+
     try {
         const { message, tenantId, sessionId, visitorId } = req.body;
 
@@ -27,8 +36,14 @@ router.post('/', async (req, res) => {
             'Access-Control-Allow-Origin': '*'
         });
 
+        // AG-UI: Run started
+        emit({ type: 'RUN_STARTED', runId, threadId: sessionId || runId });
+
         // 1. Detect language
         const language = detectLanguage(message);
+
+        // AG-UI: RAG retrieval step
+        emit({ type: 'STEP_STARTED', stepName: 'rag_retrieval' });
 
         // 2. Generate query embedding
         const queryEmbedding = await generateEmbedding(message);
@@ -41,16 +56,21 @@ router.post('/', async (req, res) => {
             ? results.matches.filter(m => m.score >= SIMILARITY_THRESHOLD)
             : [];
 
+        emit({ type: 'STEP_FINISHED', stepName: 'rag_retrieval' });
+
         let responseText = '';
         let citations = [];
         let confidence = 0;
+
+        // AG-UI: Text message start
+        emit({ type: 'TEXT_MESSAGE_START', messageId, role: 'assistant' });
 
         if (relevantChunks.length === 0) {
             // Fallback message
             responseText = getFallbackMessage(language);
             confidence = 0;
 
-            res.write(`data: ${JSON.stringify({ type: 'chunk', content: responseText })}\n\n`);
+            emit({ type: 'TEXT_MESSAGE_CONTENT', messageId, delta: responseText });
         } else {
             // 5. Build grounded prompt — pass ALL matches and let the AI decide
             const context = relevantChunks.map((chunk, i) => {
@@ -69,21 +89,25 @@ router.post('/', async (req, res) => {
 
             const systemPrompt = buildSystemPrompt(context, language);
 
-            // 6. Stream AI response
+            // AG-UI: Stream AI response as TEXT_MESSAGE_CONTENT events
+            emit({ type: 'STEP_STARTED', stepName: 'ai_generation' });
+
             const aiProvider = getAIProvider();
             const stream = aiProvider.streamChat(message, systemPrompt);
 
             for await (const chunk of stream) {
                 responseText += chunk;
-                res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
+                emit({ type: 'TEXT_MESSAGE_CONTENT', messageId, delta: chunk });
             }
+
+            emit({ type: 'STEP_FINISHED', stepName: 'ai_generation' });
         }
 
-        // Send final event with metadata
-        res.write(`data: ${JSON.stringify({
-            type: 'done',
-            language
-        })}\n\n`);
+        // AG-UI: Text message end
+        emit({ type: 'TEXT_MESSAGE_END', messageId });
+
+        // AG-UI: Run finished
+        emit({ type: 'RUN_FINISHED', runId, result: { language } });
 
         res.end();
 
@@ -100,7 +124,7 @@ router.post('/', async (req, res) => {
 
     } catch (error) {
         console.error('Chat error:', error);
-        res.write(`data: ${JSON.stringify({ type: 'error', message: 'An error occurred' })}\n\n`);
+        emit({ type: 'RUN_ERROR', runId, message: 'An error occurred', code: 'INTERNAL_ERROR' });
         res.end();
     }
 });

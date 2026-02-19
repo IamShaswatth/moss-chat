@@ -36,7 +36,6 @@ export default function Documents() {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            // Refresh list after short delay
             setTimeout(fetchDocuments, 1000);
         } catch (err) {
             setError(err.response?.data?.error || 'Upload failed');
@@ -82,7 +81,6 @@ export default function Documents() {
 
             {error && <div className="error-msg">{error}</div>}
 
-            {/* Upload Zone */}
             <div
                 className="upload-zone"
                 onClick={() => fileInputRef.current?.click()}
@@ -112,7 +110,6 @@ export default function Documents() {
                 onChange={(e) => handleUpload(e.target.files[0])}
             />
 
-            {/* Document List */}
             {loading ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
                     <span className="spinner" />
@@ -152,7 +149,7 @@ export default function Documents() {
                                         </td>
                                         <td>{doc.chunkCount || 0}</td>
                                         <td>{formatSize(doc.fileSize)}</td>
-                                        <td>{new Date(doc.createdAt).toLocaleDateString()}</td>
+                                        <td style={{ color: 'var(--text-secondary)' }}>{new Date(doc.createdAt).toLocaleDateString()}</td>
                                         <td>
                                             <button className="btn btn-danger btn-sm" onClick={() => handleDelete(id)}>
                                                 Delete

@@ -41,7 +41,8 @@ export default function Dashboard() {
                     icon="📄"
                     value={stats?.totalDocuments || 0}
                     label="Total Documents"
-                    color="green"
+                    color="purple"
+                    sub={`${stats?.recentDocuments?.length || 0} recent`}
                 />
                 <StatsCard
                     icon="💬"
@@ -53,13 +54,15 @@ export default function Dashboard() {
                     icon="📊"
                     value={stats?.recentDocuments?.length || 0}
                     label="Recent Uploads"
-                    color="yellow"
+                    color="green"
                 />
             </div>
 
             {stats?.recentDocuments && stats.recentDocuments.length > 0 && (
                 <div>
-                    <h2 style={{ fontSize: '1.1rem', marginBottom: '16px', fontWeight: 600 }}>Recent Documents</h2>
+                    <div className="section-header">
+                        <h2 className="section-title">Recent Documents</h2>
+                    </div>
                     <div className="data-table">
                         <table>
                             <thead>
@@ -73,14 +76,14 @@ export default function Dashboard() {
                             <tbody>
                                 {stats.recentDocuments.map((doc) => (
                                     <tr key={doc.id || doc._id}>
-                                        <td>{doc.originalName || doc.filename}</td>
+                                        <td style={{ fontWeight: 500 }}>{doc.originalName || doc.filename}</td>
                                         <td>
                                             <span className={`badge ${doc.status}`}>
                                                 {doc.status}
                                             </span>
                                         </td>
                                         <td>{doc.chunkCount || 0}</td>
-                                        <td>{new Date(doc.createdAt).toLocaleDateString()}</td>
+                                        <td style={{ color: 'var(--text-secondary)' }}>{new Date(doc.createdAt).toLocaleDateString()}</td>
                                     </tr>
                                 ))}
                             </tbody>

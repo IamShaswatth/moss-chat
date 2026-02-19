@@ -1,55 +1,55 @@
 (function () {
-    'use strict';
+  'use strict';
 
-    const DEFAULTS = {
-        serverUrl: 'http://localhost:3000',
-        tenantId: '',
-        position: 'right',
-        primaryColor: '#4ade80',
-        title: 'Chat Support',
-        subtitle: 'Ask us anything',
-        placeholder: 'Type your message...',
-        fallbackMessage: "I'm sorry, I couldn't find relevant information. Please contact support."
-    };
+  const DEFAULTS = {
+    serverUrl: 'http://localhost:3000',
+    tenantId: '',
+    position: 'right',
+    primaryColor: '#4ade80',
+    title: 'Chat Support',
+    subtitle: 'Ask us anything',
+    placeholder: 'Type your message...',
+    fallbackMessage: "I'm sorry, I couldn't find relevant information. Please contact support."
+  };
 
-    class MossChatWidget {
-        constructor(config = {}) {
-            this.config = { ...DEFAULTS, ...config };
-            this.sessionId = this.getSessionId();
-            this.visitorId = this.getVisitorId();
-            this.messages = [];
-            this.isOpen = false;
-            this.isTyping = false;
-            this.init();
-        }
+  class MossChatWidget {
+    constructor(config = {}) {
+      this.config = { ...DEFAULTS, ...config };
+      this.sessionId = this.getSessionId();
+      this.visitorId = this.getVisitorId();
+      this.messages = [];
+      this.isOpen = false;
+      this.isTyping = false;
+      this.init();
+    }
 
-        getSessionId() {
-            let id = sessionStorage.getItem('moss_session_id');
-            if (!id) {
-                id = 'sess_' + Math.random().toString(36).substr(2, 12);
-                sessionStorage.setItem('moss_session_id', id);
-            }
-            return id;
-        }
+    getSessionId() {
+      let id = sessionStorage.getItem('moss_session_id');
+      if (!id) {
+        id = 'sess_' + Math.random().toString(36).substr(2, 12);
+        sessionStorage.setItem('moss_session_id', id);
+      }
+      return id;
+    }
 
-        getVisitorId() {
-            let id = localStorage.getItem('moss_visitor_id');
-            if (!id) {
-                id = 'vis_' + Math.random().toString(36).substr(2, 12);
-                localStorage.setItem('moss_visitor_id', id);
-            }
-            return id;
-        }
+    getVisitorId() {
+      let id = localStorage.getItem('moss_visitor_id');
+      if (!id) {
+        id = 'vis_' + Math.random().toString(36).substr(2, 12);
+        localStorage.setItem('moss_visitor_id', id);
+      }
+      return id;
+    }
 
-        init() {
-            this.injectStyles();
-            this.createWidget();
-            this.bindEvents();
-        }
+    init() {
+      this.injectStyles();
+      this.createWidget();
+      this.bindEvents();
+    }
 
-        injectStyles() {
-            const style = document.createElement('style');
-            style.textContent = `
+    injectStyles() {
+      const style = document.createElement('style');
+      style.textContent = `
         .moss-widget-bubble {
           position: fixed;
           bottom: 24px;
@@ -263,20 +263,20 @@
           }
         }
       `;
-            document.head.appendChild(style);
-        }
+      document.head.appendChild(style);
+    }
 
-        createWidget() {
-            // Bubble
-            this.bubble = document.createElement('button');
-            this.bubble.className = 'moss-widget-bubble';
-            this.bubble.innerHTML = '💬';
-            this.bubble.setAttribute('aria-label', 'Open chat');
+    createWidget() {
+      // Bubble
+      this.bubble = document.createElement('button');
+      this.bubble.className = 'moss-widget-bubble';
+      this.bubble.innerHTML = '💬';
+      this.bubble.setAttribute('aria-label', 'Open chat');
 
-            // Panel
-            this.panel = document.createElement('div');
-            this.panel.className = 'moss-widget-panel';
-            this.panel.innerHTML = `
+      // Panel
+      this.panel = document.createElement('div');
+      this.panel.className = 'moss-widget-panel';
+      this.panel.innerHTML = `
         <div class="moss-widget-header">
           <div class="moss-widget-header-title">${this.config.title}</div>
           <div class="moss-widget-header-sub">${this.config.subtitle}</div>
@@ -295,179 +295,179 @@
         </div>
       `;
 
-            document.body.appendChild(this.bubble);
-            document.body.appendChild(this.panel);
+      document.body.appendChild(this.bubble);
+      document.body.appendChild(this.panel);
 
-            this.messagesEl = this.panel.querySelector('#moss-messages');
-            this.inputEl = this.panel.querySelector('#moss-input');
-            this.sendBtn = this.panel.querySelector('#moss-send');
-            this.typingEl = this.panel.querySelector('#moss-typing');
-        }
+      this.messagesEl = this.panel.querySelector('#moss-messages');
+      this.inputEl = this.panel.querySelector('#moss-input');
+      this.sendBtn = this.panel.querySelector('#moss-send');
+      this.typingEl = this.panel.querySelector('#moss-typing');
+    }
 
-        bindEvents() {
-            this.bubble.addEventListener('click', () => this.toggle());
-            this.sendBtn.addEventListener('click', () => this.sendMessage());
-            this.inputEl.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') this.sendMessage();
-            });
-        }
+    bindEvents() {
+      this.bubble.addEventListener('click', () => this.toggle());
+      this.sendBtn.addEventListener('click', () => this.sendMessage());
+      this.inputEl.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') this.sendMessage();
+      });
+    }
 
-        toggle() {
-            this.isOpen = !this.isOpen;
-            this.panel.classList.toggle('open', this.isOpen);
-            this.bubble.innerHTML = this.isOpen ? '✕' : '💬';
-            if (this.isOpen) {
-                this.inputEl.focus();
-            }
-        }
+    toggle() {
+      this.isOpen = !this.isOpen;
+      this.panel.classList.toggle('open', this.isOpen);
+      this.bubble.innerHTML = this.isOpen ? '✕' : '💬';
+      if (this.isOpen) {
+        this.inputEl.focus();
+      }
+    }
 
-        addMessage(role, content, meta = {}) {
-            const msg = document.createElement('div');
-            msg.className = `moss-msg ${role}`;
+    addMessage(role, content, meta = {}) {
+      const msg = document.createElement('div');
+      msg.className = `moss-msg ${role}`;
 
-            let html = `<div>${this.escapeHtml(content)}</div>`;
+      let html = `<div>${this.escapeHtml(content)}</div>`;
 
-            if (meta.citations && meta.citations.length > 0) {
-                html += '<div>';
-                meta.citations.forEach(c => {
-                    html += `<span class="moss-msg-citation">[Source ${c.index}] ${Math.round(c.score * 100)}%</span>`;
-                });
-                html += '</div>';
-            }
+      if (meta.citations && meta.citations.length > 0) {
+        html += '<div>';
+        meta.citations.forEach(c => {
+          html += `<span class="moss-msg-citation">[Source ${c.index}] ${Math.round(c.score * 100)}%</span>`;
+        });
+        html += '</div>';
+      }
 
-            if (meta.confidence) {
-                const pct = Math.round(meta.confidence * 100);
-                html += `<div class="moss-confidence">
+      if (meta.confidence) {
+        const pct = Math.round(meta.confidence * 100);
+        html += `<div class="moss-confidence">
           <span>Confidence: ${pct}%</span>
           <div class="moss-confidence-bar">
             <div class="moss-confidence-fill" style="width: ${pct}%"></div>
           </div>
         </div>`;
-            }
+      }
 
-            msg.innerHTML = html;
-            this.messagesEl.appendChild(msg);
-            this.scrollToBottom();
-            return msg;
-        }
+      msg.innerHTML = html;
+      this.messagesEl.appendChild(msg);
+      this.scrollToBottom();
+      return msg;
+    }
 
-        scrollToBottom() {
-            this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
-        }
+    scrollToBottom() {
+      this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+    }
 
-        escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+    escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
 
-        async sendMessage() {
-            const text = this.inputEl.value.trim();
-            if (!text) return;
+    async sendMessage() {
+      const text = this.inputEl.value.trim();
+      if (!text) return;
 
-            this.inputEl.value = '';
-            this.addMessage('user', text);
+      this.inputEl.value = '';
+      this.addMessage('user', text);
 
-            // Show typing
-            this.typingEl.classList.add('active');
-            this.sendBtn.disabled = true;
-            this.scrollToBottom();
+      // Show typing
+      this.typingEl.classList.add('active');
+      this.sendBtn.disabled = true;
+      this.scrollToBottom();
+
+      try {
+        const response = await fetch(`${this.config.serverUrl}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            tenantId: this.config.tenantId,
+            sessionId: this.sessionId,
+            visitorId: this.visitorId
+          })
+        });
+
+        if (!response.ok) throw new Error('Chat request failed');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let assistantText = '';
+        let assistantEl = null;
+        let metadata = {};
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
 
             try {
-                const response = await fetch(`${this.config.serverUrl}/api/chat`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message: text,
-                        tenantId: this.config.tenantId,
-                        sessionId: this.sessionId,
-                        visitorId: this.visitorId
-                    })
-                });
+              const data = JSON.parse(line.slice(6));
 
-                if (!response.ok) throw new Error('Chat request failed');
+              // AG-UI Protocol event handling
+              switch (data.type) {
+                case 'TEXT_MESSAGE_START':
+                  // Assistant message begins
+                  this.typingEl.classList.remove('active');
+                  break;
 
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let assistantText = '';
-                let assistantEl = null;
-                let metadata = {};
+                case 'TEXT_MESSAGE_CONTENT':
+                  // Streaming text chunk
+                  this.typingEl.classList.remove('active');
 
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
+                  if (!assistantEl) {
+                    assistantEl = this.addMessage('assistant', data.delta);
+                    assistantText = data.delta;
+                  } else {
+                    assistantText += data.delta;
+                    assistantEl.querySelector('div').textContent = assistantText;
+                  }
+                  this.scrollToBottom();
+                  break;
 
-                    const chunk = decoder.decode(value, { stream: true });
-                    const lines = chunk.split('\n');
+                case 'TEXT_MESSAGE_END':
+                  // Message complete
+                  break;
 
-                    for (const line of lines) {
-                        if (!line.startsWith('data: ')) continue;
+                case 'RUN_FINISHED':
+                  // Agent run complete
+                  break;
 
-                        try {
-                            const data = JSON.parse(line.slice(6));
+                case 'RUN_ERROR':
+                  this.typingEl.classList.remove('active');
+                  this.addMessage('assistant', 'Sorry, an error occurred. Please try again.');
+                  break;
 
-                            if (data.type === 'chunk') {
-                                this.typingEl.classList.remove('active');
-
-                                if (!assistantEl) {
-                                    assistantEl = this.addMessage('assistant', data.content);
-                                    assistantText = data.content;
-                                } else {
-                                    assistantText += data.content;
-                                    assistantEl.querySelector('div').textContent = assistantText;
-                                }
-                                this.scrollToBottom();
-                            } else if (data.type === 'done') {
-                                metadata = data;
-                                // Update with citations and confidence
-                                if (assistantEl && (data.citations?.length > 0 || data.confidence)) {
-                                    let extraHtml = '';
-                                    if (data.citations?.length > 0) {
-                                        extraHtml += '<div>';
-                                        data.citations.forEach(c => {
-                                            extraHtml += `<span class="moss-msg-citation">[Source ${c.index}] ${Math.round(c.score * 100)}%</span>`;
-                                        });
-                                        extraHtml += '</div>';
-                                    }
-                                    if (data.confidence) {
-                                        const pct = Math.round(data.confidence * 100);
-                                        extraHtml += `<div class="moss-confidence">
-                      <span>Confidence: ${pct}%</span>
-                      <div class="moss-confidence-bar">
-                        <div class="moss-confidence-fill" style="width: ${pct}%"></div>
-                      </div>
-                    </div>`;
-                                    }
-                                    assistantEl.innerHTML += extraHtml;
-                                }
-                            } else if (data.type === 'error') {
-                                this.typingEl.classList.remove('active');
-                                this.addMessage('assistant', 'Sorry, an error occurred. Please try again.');
-                            }
-                        } catch (e) {
-                            // Skip malformed lines
-                        }
-                    }
-                }
-            } catch (err) {
-                this.typingEl.classList.remove('active');
-                this.addMessage('assistant', this.config.fallbackMessage);
-            } finally {
-                this.sendBtn.disabled = false;
-                this.typingEl.classList.remove('active');
+                // RUN_STARTED, STEP_STARTED, STEP_FINISHED — lifecycle events, no UI action needed
+                default:
+                  break;
+              }
+            } catch (e) {
+              // Skip malformed lines
             }
+          }
         }
+      } catch (err) {
+        this.typingEl.classList.remove('active');
+        this.addMessage('assistant', this.config.fallbackMessage);
+      } finally {
+        this.sendBtn.disabled = false;
+        this.typingEl.classList.remove('active');
+      }
     }
+  }
 
-    // Expose globally
-    window.MossChatWidget = MossChatWidget;
+  // Expose globally
+  window.MossChatWidget = MossChatWidget;
 
-    // Auto-init from script attributes
-    const script = document.currentScript;
-    if (script && script.dataset.tenantId) {
-        new MossChatWidget({
-            tenantId: script.dataset.tenantId,
-            serverUrl: script.dataset.serverUrl || DEFAULTS.serverUrl
-        });
-    }
+  // Auto-init from script attributes
+  const script = document.currentScript;
+  if (script && script.dataset.tenantId) {
+    new MossChatWidget({
+      tenantId: script.dataset.tenantId,
+      serverUrl: script.dataset.serverUrl || DEFAULTS.serverUrl
+    });
+  }
 })();

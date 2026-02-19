@@ -4,15 +4,27 @@ import { useAuth } from '../context/AuthContext.jsx';
 
 export default function Sidebar() {
     const { logout, user } = useAuth();
+    const initials = user?.email ? user.email.substring(0, 2).toUpperCase() : 'AD';
 
     return (
         <aside className="sidebar">
             <div className="sidebar-logo">
-                <span>🌿</span> Moss Chat
+                <div className="sidebar-logo-icon">🌿</div>
+                Moss Chat
             </div>
-            <div className="sidebar-subtitle">Admin Panel</div>
+
+            {/* Search Bar */}
+            <div className="sidebar-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input type="text" placeholder="Search..." />
+            </div>
 
             <nav className="sidebar-nav">
+                <div className="sidebar-section-label">Main</div>
+
                 <NavLink to="/" end className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="3" width="7" height="9" rx="1" />
@@ -33,6 +45,8 @@ export default function Sidebar() {
                     Documents
                 </NavLink>
 
+                <div className="sidebar-section-label">Analytics</div>
+
                 <NavLink to="/chat-history" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -42,8 +56,12 @@ export default function Sidebar() {
             </nav>
 
             <div className="sidebar-footer">
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '12px', padding: '0 4px' }}>
-                    {user?.email}
+                <div className="sidebar-user">
+                    <div className="sidebar-avatar">{initials}</div>
+                    <div className="sidebar-user-info">
+                        <div className="sidebar-user-email">{user?.email}</div>
+                        <div className="sidebar-user-role">Admin</div>
+                    </div>
                 </div>
                 <button onClick={logout}>Sign Out</button>
             </div>
