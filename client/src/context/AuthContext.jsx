@@ -1,30 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
 
 const AuthContext = createContext(null);
 
+// Single-tenant mode: no login required
+const DEFAULT_USER = {
+    email: 'admin',
+    tenantId: '94aece93-be80-4cf4-b13c-a464751394d9',
+    role: 'admin'
+};
+
 export function AuthProvider({ children }) {
-    const [token, setToken] = useState(localStorage.getItem('moss_token'));
-    const [user, setUser] = useState(() => {
-        const saved = localStorage.getItem('moss_user');
-        return saved ? JSON.parse(saved) : null;
-    });
-
-    const login = (tokenData, userData) => {
-        localStorage.setItem('moss_token', tokenData);
-        localStorage.setItem('moss_user', JSON.stringify(userData));
-        setToken(tokenData);
-        setUser(userData);
-    };
-
-    const logout = () => {
-        localStorage.removeItem('moss_token');
-        localStorage.removeItem('moss_user');
-        setToken(null);
-        setUser(null);
-    };
-
     return (
-        <AuthContext.Provider value={{ token, user, login, logout }}>
+        <AuthContext.Provider value={{ user: DEFAULT_USER, token: 'no-auth', login: () => {}, logout: () => {} }}>
             {children}
         </AuthContext.Provider>
     );

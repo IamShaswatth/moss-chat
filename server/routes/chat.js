@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { ChatSession, Message, UnansweredQuestion, FaqEntry } from '../models/index.js';
+import { ChatSession, Message, UnansweredQuestion, FaqEntry, ProductCatalog } from '../models/index.js';
 import { generateEmbedding } from '../services/rag/embeddings.js';
 import { queryVectors } from '../services/rag/pinecone.js';
 import { getAIProvider } from '../services/ai/index.js';
@@ -99,6 +99,28 @@ router.post('/', async (req, res) => {
             }
         } catch (e) { /* ignore FAQ fetch errors */ }
 
+        // Fetch product catalog data for sales queries
+        let productContext = '';
+        try {
+            const products = await ProductCatalog.find({ tenantId }).lean();
+            if (products.length > 0) {
+                productContext = '\n\n--- Product/Service Catalog (Prices & Items) ---\n' +
+                    products.map(p => {
+                        let line = `- ${p.name}`;
+                        if (p.price != null) line += `: ${p.price}`;
+                        if (p.unit) line += ` per ${p.unit}`;
+                        if (p.category) line += ` [${p.category}]`;
+                        if (p.description) line += ` — ${p.description}`;
+                        // Include any extra fields
+                        if (p.extraFields && Object.keys(p.extraFields).length > 0) {
+                            line += ' (' + Object.entries(p.extraFields).map(([k,v]) => `${k}: ${v}`).join(', ') + ')';
+                        }
+                        return line;
+                    }).join('\n');
+                console.log(`[Products] Injected ${products.length} catalog items into context`);
+            }
+        } catch (e) { /* ignore product fetch errors */ }
+
         emit({ type: 'STEP_FINISHED', stepName: 'rag_retrieval' });
 
         let responseText = '';
@@ -108,12 +130,29 @@ router.post('/', async (req, res) => {
         // AG-UI: Text message start
         emit({ type: 'TEXT_MESSAGE_START', messageId, role: 'assistant' });
 
-        if (relevantChunks.length === 0) {
-            // Fallback message
+        if (relevantChunks.length === 0 && !productContext && !faqContext) {
+            // Fallback message — no RAG, no products, no FAQ
             responseText = getFallbackMessage(language);
             confidence = 0;
 
             emit({ type: 'TEXT_MESSAGE_CONTENT', messageId, delta: responseText });
+        } else if (relevantChunks.length === 0 && (productContext || faqContext)) {
+            // No RAG results but we have product catalog or FAQ data — let AI answer from those
+            const context = (productContext || '') + (faqContext || '');
+            confidence = 0.5;
+
+            const systemPrompt = buildSystemPrompt(context, language, userName);
+            emit({ type: 'STEP_STARTED', stepName: 'ai_generation' });
+
+            const aiProvider = getAIProvider();
+            const stream = aiProvider.streamChat(message, systemPrompt);
+
+            for await (const chunk of stream) {
+                responseText += chunk;
+                emit({ type: 'TEXT_MESSAGE_CONTENT', messageId, delta: chunk });
+            }
+
+            emit({ type: 'STEP_FINISHED', stepName: 'ai_generation' });
         } else {
             // 5. Build grounded prompt — pass ALL matches and let the AI decide
             const context = relevantChunks.map((chunk, i) => {
@@ -124,7 +163,7 @@ router.post('/', async (req, res) => {
                     documentId: chunk.metadata.documentId
                 });
                 return `[Source ${i + 1}]: ${chunk.metadata.text}`;
-            }).join('\n\n') + faqContext;
+            }).join('\n\n') + faqContext + productContext;
 
             confidence = Math.round(
                 (relevantChunks.reduce((sum, c) => sum + c.score, 0) / relevantChunks.length) * 100
@@ -152,24 +191,53 @@ router.post('/', async (req, res) => {
         // AG-UI: Run finished
         emit({ type: 'RUN_FINISHED', runId, result: { language } });
 
-        res.end();
+        // Store chat session & message BEFORE closing the connection
+        try {
+            await storeChatMessage({
+                sessionId: sessionId || uuidv4(),
+                visitorId: visitorId || 'anonymous',
+                tenantId,
+                userMessage: message,
+                assistantMessage: responseText,
+                citations,
+                confidence,
+                userName: userName || null,
+                userEmail: userEmail || null
+            });
+            console.log(`[Chat] Stored message for session ${sessionId}`);
+        } catch (storeErr) {
+            console.error('[Chat] FAILED to store message:', storeErr);
+        }
 
-        // Store chat session & message
-        await storeChatMessage({
-            sessionId: sessionId || uuidv4(),
-            visitorId: visitorId || 'anonymous',
-            tenantId,
-            userMessage: message,
-            assistantMessage: responseText,
-            citations,
-            confidence,
-            userName: userName || null,
-            userEmail: userEmail || null
-        });
+        res.end();
 
     } catch (error) {
         console.error('Chat error:', error);
-        emit({ type: 'RUN_ERROR', runId, message: 'An error occurred', code: 'INTERNAL_ERROR' });
+        const errorMsg = 'Sorry, an error occurred. Please try again.';
+        try {
+            emit({ type: 'TEXT_MESSAGE_CONTENT', messageId, delta: errorMsg });
+            emit({ type: 'TEXT_MESSAGE_END', messageId });
+            emit({ type: 'RUN_ERROR', runId, message: 'An error occurred', code: 'INTERNAL_ERROR' });
+        } catch (e) { /* headers already sent */ }
+
+        // Store even on error
+        try {
+            await storeChatMessage({
+                sessionId: sessionId || uuidv4(),
+                visitorId: visitorId || 'anonymous',
+                tenantId,
+                userMessage: message,
+                assistantMessage: responseText || errorMsg,
+                citations: [],
+                confidence: 0,
+                userName: userName || null,
+                userEmail: userEmail || null
+            });
+            console.log(`[Chat] Stored error message for session ${sessionId}`);
+        } catch (storeErr) {
+            console.error('[Chat] FAILED to store error message:', storeErr);
+        }
+
         res.end();
     }
 });
@@ -201,94 +269,28 @@ router.get('/sessions/:id', async (req, res) => {
 function buildSystemPrompt(context, language, userName) {
     const langName = getLanguageName(language);
     const userGreeting = userName ? `\nThe customer's name is ${userName}. Address them by name when appropriate to make the conversation personal.` : '';
-    return `You are an AI assistant for a business using a structured catalog and retrieved knowledge base.${userGreeting}
+    return `You are a helpful AI assistant for a business. You answer customer questions using the retrieved knowledge base context provided below.${userGreeting}
 
-You may receive two types of context:
-1. Retrieved document chunks (RAG context)
-2. Structured catalog data:
-   - Requested item (name, price, description, category)
-   - Related items (name, price, description, category)
-
-Your job is to provide accurate, grounded responses and optionally assist with sales in a professional manner.
+You MUST respond in **${langName}** language.
 
 ----------------------------------------------------
-GENERAL GROUNDING RULES
+RULES
 ----------------------------------------------------
 
-1. Answer strictly using:
-   - Retrieved document chunks
-   - Structured catalog data (if provided)
-2. Do NOT invent products, services, prices, policies, or offers.
-3. Do NOT assume availability unless explicitly stated.
-4. If something is not present in the provided context, respond:
-   "This information is not available in the provided records."
-5. Maintain a professional and neutral tone.
-6. Do NOT imitate slang or informal language from the user.
-7. You MUST respond in **${langName}** language. The user is communicating in ${langName}. Maintain professional tone in all languages.
+1. ALWAYS use the Retrieved Context below to answer. The context IS relevant — it was retrieved specifically for this query.
+2. If the context contains information related to the question, USE IT to give a helpful answer. Summarize, list items, or explain as needed.
+3. Do NOT invent facts, prices, services, or policies that are not in the context.
+4. Only say you cannot help if the context is truly about a completely different topic with zero relevance.
+5. Be friendly, professional, and concise.
+6. If the user asks about pricing and prices are in the context, list them clearly.
+7. If the user asks a broad question like "services" or "what do you offer", summarize everything available in the context.
+8. Do NOT include source references or citations in your response.
 
 ----------------------------------------------------
-INTENT HANDLING
+UPSELL (OPTIONAL)
 ----------------------------------------------------
 
-If structured catalog data is provided, assume the backend has already:
-- Detected product/service or pricing intent
-- Identified the requested item
-- Provided 1–2 related items (if applicable)
-
-You must:
-- Prioritize structured catalog data for pricing and product details.
-- Use RAG context for policies, descriptions, or additional clarification.
-
-----------------------------------------------------
-UPSELL & CROSS-SELL BEHAVIOR
-----------------------------------------------------
-
-If:
-- The user asks about price, availability, features, or details
-AND
-- Related items are provided in the structured catalog context
-
-Then:
-1. First, clearly answer the user's main question.
-2. Then, optionally suggest up to two related complementary items.
-3. Keep suggestions concise and non-aggressive.
-4. Only suggest items explicitly provided in the structured catalog.
-5. Do NOT generate suggestions if no related items are provided.
-
-Suggestion Format:
-- Provide the direct answer first.
-- Then add one short optional sentence:
-  "You may also consider [Item Name], priced at [Price]."
-
-----------------------------------------------------
-MULTI-CONDITION SAFETY
-----------------------------------------------------
-
-If the question contains multiple parts:
-- Address each part clearly.
-- If one part is not supported by provided records, state that clearly while answering the supported part.
-
-----------------------------------------------------
-FALLBACK SAFETY
-----------------------------------------------------
-
-If the requested item is not found in the structured catalog:
-Respond: "This item is not listed in the available records."
-
-If context is insufficient:
-Respond: "This information is not available in the provided records."
-
-Never guess.
-Never hallucinate.
-Never fabricate discounts or limited offers.
-
-----------------------------------------------------
-GOAL
-----------------------------------------------------
-
-Provide accurate information and gently support revenue growth by suggesting relevant complementary items when appropriate, without compromising factual correctness or trust.
-
-Do NOT include source references or citations in your response.
+If the user asks about a specific service/product and the context mentions related ones, you may briefly suggest 1-2 complementary items.
 
 Retrieved Context:
 ${context}`;

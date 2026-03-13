@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
-import { authenticate } from '../middleware/auth.js';
-import { enforceTenant } from '../middleware/tenant.js';
+import { injectTenant } from '../middleware/defaultTenant.js';
 import { Document } from '../models/index.js';
 import { extractText } from '../services/pdf.js';
 import { chunkText } from '../services/rag/chunker.js';
@@ -25,7 +24,7 @@ const upload = multer({
 });
 
 // Upload and ingest PDF
-router.post('/upload', authenticate, enforceTenant, upload.single('file'), async (req, res) => {
+router.post('/upload', injectTenant, upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
@@ -60,7 +59,7 @@ router.post('/upload', authenticate, enforceTenant, upload.single('file'), async
 });
 
 // List documents
-router.get('/', authenticate, enforceTenant, async (req, res) => {
+router.get('/', injectTenant, async (req, res) => {
     try {
         const docs = await findDocuments(req.tenantId);
         res.json(docs);
@@ -70,7 +69,7 @@ router.get('/', authenticate, enforceTenant, async (req, res) => {
 });
 
 // Delete document
-router.delete('/:id', authenticate, enforceTenant, async (req, res) => {
+router.delete('/:id', injectTenant, async (req, res) => {
     try {
         const doc = await findDocumentById(req.params.id, req.tenantId);
         if (!doc) return res.status(404).json({ error: 'Document not found' });

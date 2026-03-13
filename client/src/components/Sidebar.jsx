@@ -3,8 +3,8 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
 export default function Sidebar() {
-    const { logout, user } = useAuth();
-    const initials = user?.email ? user.email.substring(0, 2).toUpperCase() : 'AD';
+    const { user } = useAuth();
+    const initials = 'AD';
 
     return (
         <aside className="sidebar">
@@ -44,6 +44,15 @@ export default function Sidebar() {
                     Documents
                 </NavLink>
 
+                <NavLink to="/products" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <path d="M16 10a4 4 0 0 1-8 0" />
+                    </svg>
+                    Products & Prices
+                </NavLink>
+
                 <div className="sidebar-section-label">Analytics</div>
 
                 <NavLink to="/chat-history" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
@@ -60,17 +69,35 @@ export default function Sidebar() {
                     </svg>
                     Suggestions
                 </NavLink>
+
+                <NavLink to="/charts" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10" />
+                        <line x1="12" y1="20" x2="12" y2="4" />
+                        <line x1="6" y1="20" x2="6" y2="14" />
+                    </svg>
+                    Charts
+                </NavLink>
+
+                <div className="sidebar-section-label">Integrations</div>
+
+                <NavLink to="/telegram" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215l-16.5 7.5a2.25 2.25 0 0 0 .126 4.173l4.2 1.26 1.26 4.2a2.25 2.25 0 0 0 4.174.126l7.5-16.5a2.242 2.242 0 0 0-1.738-2.974z" />
+                        <path d="M10 14l5-5" />
+                    </svg>
+                    Telegram Bot
+                </NavLink>
             </nav>
 
             <div className="sidebar-footer">
                 <div className="sidebar-user">
                     <div className="sidebar-avatar">{initials}</div>
                     <div className="sidebar-user-info">
-                        <div className="sidebar-user-email">{user?.email}</div>
-                        <div className="sidebar-user-role">Admin</div>
+                        <div className="sidebar-user-email">Admin</div>
+                        <div className="sidebar-user-role">Single Tenant</div>
                     </div>
                 </div>
-                <button onClick={logout}>Sign Out</button>
             </div>
         </aside>
     );

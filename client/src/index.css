@@ -272,6 +272,14 @@ body {
   font-size: 0.9rem;
 }
 
+/* =================== Generic Card =================== */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
 /* =================== Stats Cards =================== */
 .stats-grid {
   display: grid;

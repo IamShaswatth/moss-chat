@@ -33,10 +33,26 @@ const chatSessionSchema = new mongoose.Schema({
     messages: [messageSchema]
 }, { timestamps: true });
 
+const productCatalogSchema = new mongoose.Schema({
+    tenantId: { type: String, required: true, index: true },
+    name: { type: String, required: true },
+    price: { type: Number, default: null },
+    category: { type: String, default: null, index: true },
+    description: { type: String, default: null },
+    sku: { type: String, default: null },
+    unit: { type: String, default: null },
+    extraFields: { type: Object, default: {} },
+    sourceFile: { type: String, default: null }
+}, { timestamps: true });
+
+productCatalogSchema.index({ tenantId: 1, name: 1 });
+productCatalogSchema.index({ tenantId: 1, category: 1 });
+
 export const User = mongoose.model('User', userSchema);
 export const Document = mongoose.model('Document', documentSchema);
 export const ChatSession = mongoose.model('ChatSession', chatSessionSchema);
 export const Message = mongoose.model('Message', messageSchema);
+export const ProductCatalog = mongoose.model('ProductCatalog', productCatalogSchema);
 import { UnansweredQuestion } from './UnansweredQuestion.js';
 import { FaqEntry } from './FaqEntry.js';
 export { UnansweredQuestion, FaqEntry };
